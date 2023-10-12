@@ -149,12 +149,12 @@ class AutoRun:
     def do(boy):
         boy.frame = (boy.frame + 1) % 8
 
-        if ( boy.x + boy.dir * 10 ) < 40:
+        if (boy.x + boy.dir * 10) < 40:
             boy.dir, boy.action = 1, 1
-        elif ( boy.x + boy.dir * 10 ) > 760:
+        elif (boy.x + boy.dir * 10) > 760:
             boy.dir, boy.action = -1, 0
 
-        boy.x += boy.dir * 8 # 속도 8
+        boy.x += boy.dir * 8  # 속도 8
 
         if get_time() - boy.wait_time > 5:  # 경과시간에서 보이 시작 시간 빼기 - 차이가 3초가 넘으면
             boy.state_machine.handle_event(('TIME_OUT', 0))  # 타임아웃이 넘어감
