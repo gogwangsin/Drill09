@@ -43,9 +43,9 @@ class Idle:
     @staticmethod
     def enter(boy, e):  # idle상태가 시작됐을 때 시작을 세서 time_out 이벤트를 발생시켜야함
         if boy.action == 0:
-            boy.action = 2 # 왼쪽 멈춤
+            boy.action = 2  # 왼쪽 멈춤
         elif boy.action == 1:
-            boy.action = 3 # 우측 멈춤
+            boy.action = 3  # 우측 멈춤
         boy.dir = 0
         boy.wait_time = get_time()  # 경과 시간 얻는법 -> pico2d 시작하면 0초고 게임 시작 시간부터 시간 잼
         boy.frame = 0
@@ -119,14 +119,13 @@ class Run:
     @staticmethod
     def do(boy):
         boy.frame = (boy.frame + 1) % 8
-        boy.x += boy.dir * 5 # IDLE 0이면 정지 -> 양수면 우측
+        boy.x += boy.dir * 5  # IDLE 0이면 정지 -> 양수면 우측
         print('달리기')
 
     @staticmethod
     def draw(boy):
         boy.image.clip_draw(boy.frame * 100, boy.action * 100, 100, 100, boy.x, boy.y)
         pass
-
 
 
 class AutoRun:
@@ -149,7 +148,15 @@ class AutoRun:
     @staticmethod
     def do(boy):
         boy.frame = (boy.frame + 1) % 8
-        boy.x += boy.dir * 0.1 # 속도 느리게 설정중
+
+        if ( boy.x + boy.dir * 10 ) < 45:
+            boy.dir, boy.action = 1, 1
+        elif ( boy.x + boy.dir * 10 ) > 760:
+            boy.dir, boy.action = -1, 0
+
+        boy.x += boy.dir * 5
+        # boy가 화면 밖에 나가려고 할 때 반대 방향으로
+
         if get_time() - boy.wait_time > 5:  # 경과시간에서 보이 시작 시간 빼기 - 차이가 3초가 넘으면
             boy.state_machine.handle_event(('TIME_OUT', 0))  # 타임아웃이 넘어감
         else:
@@ -160,12 +167,10 @@ class AutoRun:
         boy.image.clip_draw(boy.frame * 100, boy.action * 100, 100, 100, boy.x, boy.y + 40, 200, 200)
 
 
-
-
 class StateMachine:
     def __init__(self, boy):
         self.boy = boy
-        self.cur_state = Idle # 기본 idle 상태
+        self.cur_state = Idle  # 기본 idle 상태
         # 딕셔너리 -> Sleep상태에서 space 들어오면 idle상태가 된다.
         self.transitions = {
             # Idle에서 키 검사 +  time_out 검사
@@ -173,14 +178,14 @@ class StateMachine:
             # 가만히 있는데 키를 떼면 run -> up은 있을 수 없음
             Sleep: {right_down: Run, left_down: Run, right_up: Run, left_up: Run, space_down: Idle},
             # 자고 있는중에 space
-            Run: {right_down: Idle, left_down: Idle, right_up: Idle, left_up: Idle}, # value가 idle
+            Run: {right_down: Idle, left_down: Idle, right_up: Idle, left_up: Idle},  # value가 idle
             # 달리고 있는중 down키가 들어오면 idle화 -> 방향키 왼쪽 오른쪽 두번 들어온거
             # -> 달리고 있는 상태 Run에서 키 입력 들어오면 멈춤 idle
             # 달리고 있는중 떼면 idle화
             AutoRun: {time_out: Idle}
         }
 
-    def start(self): # 시작 entry action 'key == START', event값 0 아직 안씀
+    def start(self):  # 시작 entry action 'key == START', event값 0 아직 안씀
         self.cur_state.enter(self.boy, ('START', 0))
 
     def handle_event(self, e):
@@ -216,9 +221,9 @@ class Boy:
     def update(self):
         self.state_machine.update()
 
-    def handle_event(self, event): # 이벤트 받고
+    def handle_event(self, event):  # 이벤트 받고
         print(event)
-        self.state_machine.handle_event(('INPUT', event)) # input으로 들어가고
+        self.state_machine.handle_event(('INPUT', event))  # input으로 들어가고
         pass
 
     def draw(self):
