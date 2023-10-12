@@ -149,13 +149,12 @@ class AutoRun:
     def do(boy):
         boy.frame = (boy.frame + 1) % 8
 
-        if ( boy.x + boy.dir * 10 ) < 45:
+        if ( boy.x + boy.dir * 10 ) < 40:
             boy.dir, boy.action = 1, 1
         elif ( boy.x + boy.dir * 10 ) > 760:
             boy.dir, boy.action = -1, 0
 
-        boy.x += boy.dir * 5
-        # boy가 화면 밖에 나가려고 할 때 반대 방향으로
+        boy.x += boy.dir * 8 # 속도 8
 
         if get_time() - boy.wait_time > 5:  # 경과시간에서 보이 시작 시간 빼기 - 차이가 3초가 넘으면
             boy.state_machine.handle_event(('TIME_OUT', 0))  # 타임아웃이 넘어감
@@ -171,42 +170,31 @@ class StateMachine:
     def __init__(self, boy):
         self.boy = boy
         self.cur_state = Idle  # 기본 idle 상태
-        # 딕셔너리 -> Sleep상태에서 space 들어오면 idle상태가 된다.
         self.transitions = {
-            # Idle에서 키 검사 +  time_out 검사
             Idle: {right_down: Run, left_down: Run, right_up: Run, left_up: Run, time_out: Sleep, key_a_down: AutoRun},
-            # 가만히 있는데 키를 떼면 run -> up은 있을 수 없음
             Sleep: {right_down: Run, left_down: Run, right_up: Run, left_up: Run, space_down: Idle},
-            # 자고 있는중에 space
-            Run: {right_down: Idle, left_down: Idle, right_up: Idle, left_up: Idle},  # value가 idle
-            # 달리고 있는중 down키가 들어오면 idle화 -> 방향키 왼쪽 오른쪽 두번 들어온거
-            # -> 달리고 있는 상태 Run에서 키 입력 들어오면 멈춤 idle
-            # 달리고 있는중 떼면 idle화
-            AutoRun: {time_out: Idle}
+            Run: {right_down: Idle, left_down: Idle, right_up: Idle, left_up: Idle},
+            AutoRun: {time_out: Idle, right_down: Run, left_down: Run, right_up: Run, left_up: Run}
         }
 
     def start(self):  # 시작 entry action 'key == START', event값 0 아직 안씀
         self.cur_state.enter(self.boy, ('START', 0))
 
     def handle_event(self, e):
-        # 이벤트가 발생했을 때 상태를 바꿔주면 된다.
-        # self table { dictionary } -> 현재 cur_state == sleep, 이놈의 items는 spacedown, idle
         for check_event, next_state in self.transitions[self.cur_state].items():
-            # -> [Idle].items() : key = right_down부터 value = Run을 순서대로 불러와서 if(right_down)인지 검사하고
-            # true면 상태 바꾸기
-            if check_event(e):  # space_down이 true면
-                self.cur_state.exit(self.boy, e)  # 상태 바뀌기 전에 Exit action, event정보를 e로 전달
-                self.cur_state = next_state  # Idle 상태로 다음 과정으로 넘어간다.
-                self.cur_state.enter(self.boy, e)  # 바뀐 상태일 때 entry action
-                return True  # 상태변환 성공
+            if check_event(e):
+                self.cur_state.exit(self.boy, e)
+                self.cur_state = next_state
+                self.cur_state.enter(self.boy, e)
+                return True
 
-        return False  # 위에가 실패하면 False -> 나중에 디버깅할 때 유리해진다.
+        return False
 
     def update(self):
         self.cur_state.do(self.boy)
 
     def draw(self):
-        self.cur_state.draw(self.boy)  # 소년 이미지, 소년 위치를 알아야 그리지요.
+        self.cur_state.draw(self.boy)
 
 
 class Boy:
@@ -215,15 +203,15 @@ class Boy:
         self.frame = 0
         self.action = 3
         self.image = load_image('animation_sheet.png')
-        self.state_machine = StateMachine(self)  # 소년객체 정보 주기
+        self.state_machine = StateMachine(self)
         self.state_machine.start()
 
     def update(self):
         self.state_machine.update()
 
-    def handle_event(self, event):  # 이벤트 받고
+    def handle_event(self, event):
         print(event)
-        self.state_machine.handle_event(('INPUT', event))  # input으로 들어가고
+        self.state_machine.handle_event(('INPUT', event))
         pass
 
     def draw(self):
